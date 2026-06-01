@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sofii.sells — IG Revenue System</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+:root{--cream:#F9F5EF;--white:#fff;--dark:#1C1612;--purple:#41215E;--purple-light:#E8E0FF;--purple-pale:#F3EEFF;--gold:#B8966A;--gold-light:#F0E6D3;--muted:#8A7D72;--border:#E5DDD3;--success:#4A7C59;--danger:#C0392B}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--cream);color:var(--dark);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex;flex-direction:column}
+
+/* AUTH */
+#screen-auth{align-items:center;justify-content:center;background:var(--dark);position:relative;overflow:hidden}
+#screen-auth::before{content:'';position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(65,33,94,.6) 0%,transparent 70%);top:-100px;right:-100px;pointer-events:none}
+.auth-box{text-align:center;padding:48px 40px;position:relative;z-index:1;max-width:400px;width:90%}
+.auth-logo{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:38px;color:var(--white);letter-spacing:-1px;margin-bottom:6px}
+.auth-logo span{font-style:normal;font-weight:600;color:var(--gold)}
+.auth-tagline{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:40px}
+.auth-tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:10px;padding:4px;margin-bottom:28px}
+.auth-tab{flex:1;padding:9px;border-radius:7px;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:13px;color:rgba(255,255,255,.5);cursor:pointer;transition:all .15s}
+.auth-tab.active{background:rgba(255,255,255,.12);color:var(--white)}
+.auth-label{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:8px;display:block;text-align:left}
+.auth-input{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:14px 18px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--white);outline:none;transition:border-color .2s;margin-bottom:12px}
+.auth-input:focus{border-color:var(--gold)}
+.auth-input::placeholder{color:rgba(255,255,255,.25)}
+.auth-error{font-size:13px;color:#FF8A80;margin-bottom:12px;display:none;text-align:left}
+.auth-success{font-size:13px;color:#80FF9A;margin-bottom:12px;display:none;text-align:left}
+.btn-auth{width:100%;padding:15px;background:var(--gold);color:var(--dark);border:none;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;letter-spacing:.5px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px}
+.btn-auth:hover{background:#C9A97A;transform:translateY(-1px)}
+.btn-auth:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+/* ONBOARDING */
+#screen-onboarding{align-items:center;justify-content:center;padding:40px 24px}
+.ob-wrap{max-width:520px;width:100%}
+.ob-step{display:none;animation:fadeUp .4s ease forwards}
+.ob-step.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.ob-eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+.ob-title{font-family:'Cormorant Garamond',serif;font-size:34px;line-height:1.15;color:var(--dark);margin-bottom:8px}
+.ob-title em{font-style:italic;color:var(--purple)}
+.ob-sub{font-size:14px;color:var(--muted);margin-bottom:28px;line-height:1.6}
+.ob-progress{display:flex;gap:6px;margin-bottom:36px}
+.ob-dot{height:3px;flex:1;border-radius:2px;background:var(--border);transition:background .3s}
+.ob-dot.done{background:var(--purple)}
+
+/* APP */
+#screen-app{flex-direction:column}
+.app-header{padding:16px 24px;border-bottom:1px solid var(--border);background:var(--white);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;gap:12px}
+.app-logo{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:20px;color:var(--purple);white-space:nowrap}
+.app-logo span{font-style:normal;font-weight:600}
+.app-nav{display:flex;gap:3px;background:var(--cream);border-radius:10px;padding:3px;overflow-x:auto}
+.nav-btn{padding:6px 11px;border-radius:7px;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.nav-btn.active{background:var(--white);color:var(--dark);font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.user-menu{display:flex;align-items:center;gap:8px}
+.user-dot{width:30px;height:30px;background:var(--purple-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:var(--purple);flex-shrink:0;cursor:pointer}
+.btn-logout{padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s}
+.btn-logout:hover{border-color:var(--danger);color:var(--danger)}
+
+/* TABS */
+.tab-content{display:none;flex:1}
+.tab-content.active{display:block}
+.page-layout{max-width:700px;margin:0 auto;padding:36px 24px 100px}
+.section-eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.section-title{font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--dark);margin-bottom:4px}
+.section-title em{font-style:italic;color:var(--purple)}
+.section-sub{font-size:14px;color:var(--muted);margin-bottom:28px;line-height:1.6}
+
+/* FORM */
+.field-group{margin-bottom:18px}
+.field-label{font-size:11px;font-weight:500;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;display:block}
+.f-input,.f-textarea,.f-select{width:100%;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:13px 17px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dark);outline:none;transition:border-color .2s;appearance:none}
+.f-input:focus,.f-textarea:focus,.f-select:focus{border-color:var(--purple)}
+.f-textarea{resize:none;line-height:1.6}
+.f-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238A7D72' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 15px center;padding-right:38px;cursor:pointer}
+.pills{display:flex;gap:7px;flex-wrap:wrap}
+.pill{padding:7px 15px;border-radius:100px;border:1px solid var(--border);font-size:12px;cursor:pointer;transition:all .15s;background:var(--white);color:var(--muted);user-select:none}
+.pill:hover{border-color:var(--purple);color:var(--purple)}
+.pill.active{background:var(--purple);border-color:var(--purple);color:var(--white)}
+.tone-row{display:flex;align-items:center;gap:12px}
+.tone-lbl{font-size:11px;color:var(--muted);white-space:nowrap;min-width:75px}
+.tone-lbl.r{text-align:right}
+input[type="range"]{flex:1;-webkit-appearance:none;height:3px;background:linear-gradient(to right,var(--purple-light),var(--purple) 50%,var(--gold));border-radius:2px;outline:none;cursor:pointer}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--white);border:2px solid var(--purple);box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer}
+
+/* BUTTONS */
+.btn-primary{width:100%;padding:15px;background:var(--purple);color:var(--white);border:none;border-radius:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary:hover{background:#341a4d;transform:translateY(-1px);box-shadow:0 8px 24px rgba(65,33,94,.28)}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-next{width:100%;padding:15px;background:var(--purple);color:var(--white);border:none;border-radius:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;margin-top:8px}
+.btn-next:hover{background:#341a4d;transform:translateY(-1px)}
+.spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn-icon{padding:5px 11px;border-radius:8px;border:1px solid var(--border);background:transparent;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s}
+.btn-icon:hover{border-color:var(--purple);color:var(--purple)}
+.btn-icon.saved{border-color:var(--gold);color:var(--gold);background:var(--gold-light)}
+.btn-icon.copied{border-color:var(--success);color:var(--success)}
+
+/* CARDS */
+.divider{display:flex;align-items:center;gap:14px;margin:28px 0 18px}
+.div-line{flex:1;height:1px;background:var(--border)}
+.div-text{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.result-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;animation:fadeUp .35s ease forwards;opacity:0;transition:box-shadow .2s}
+.result-card:nth-child(2){animation-delay:.08s}
+.result-card:nth-child(3){animation-delay:.16s}
+.result-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.06)}
+.card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-num{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;color:var(--gold)}
+.card-actions{display:flex;gap:7px}
+.card-text{font-size:14px;line-height:1.8;color:var(--dark);white-space:pre-wrap}
+.error-msg{background:#FFF5F5;border:1px solid #FECACA;border-radius:11px;padding:13px 17px;font-size:13px;color:var(--danger);display:none;margin-top:10px}
+.info-box{background:var(--purple-pale);border:1px solid var(--purple-light);border-radius:11px;padding:13px 17px;font-size:13px;color:var(--purple);line-height:1.6;margin-bottom:22px}
+
+/* HOOKS */
+.hook-category{margin-bottom:28px}
+.hook-cat-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--dark);margin-bottom:3px}
+.hook-cat-sub{font-size:12px;color:var(--muted);margin-bottom:12px}
+.hook-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:9px;transition:all .15s}
+.hook-card:hover{box-shadow:0 3px 14px rgba(0,0,0,.06)}
+.hook-text{font-size:14px;line-height:1.7;color:var(--dark);flex:1}
+.hook-badge{font-size:10px;padding:3px 8px;border-radius:100px;background:var(--purple-pale);color:var(--purple);white-space:nowrap;flex-shrink:0}
+.hook-copy{padding:5px 11px;border-radius:7px;border:1px solid var(--border);background:transparent;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.hook-copy:hover{border-color:var(--purple);color:var(--purple)}
+.hooks-gen-box{background:var(--white);border:1px dashed var(--border);border-radius:14px;padding:20px;margin-bottom:28px}
+.hooks-gen-row{display:flex;gap:10px}
+.hooks-gen-row .f-input{margin:0}
+.btn-gen-hooks{padding:13px 20px;background:var(--purple);color:var(--white);border:none;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.btn-gen-hooks:hover{background:#341a4d}
+.btn-gen-hooks:disabled{opacity:.5;cursor:not-allowed}
+
+/* SEQUENCE */
+.seq-day{background:var(--white);border:1px solid var(--border);border-radius:13px;overflow:hidden;animation:fadeUp .35s ease forwards;opacity:0;margin-bottom:12px}
+.seq-day:nth-child(2){animation-delay:.06s}
+.seq-day:nth-child(3){animation-delay:.12s}
+.seq-day:nth-child(4){animation-delay:.18s}
+.seq-day:nth-child(5){animation-delay:.24s}
+.seq-day-header{padding:13px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--cream)}
+.seq-day-label{font-size:12px;font-weight:500;color:var(--purple)}
+.seq-day-type{font-size:11px;color:var(--muted);padding:3px 9px;border-radius:100px;background:var(--white);border:1px solid var(--border)}
+.seq-day-body{padding:16px 18px}
+.seq-day-content{font-size:14px;line-height:1.8;color:var(--dark);white-space:pre-wrap}
+.seq-actions{display:flex;gap:8px;margin-top:11px}
+.seq-copy{padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s}
+.seq-copy:hover{border-color:var(--purple);color:var(--purple)}
+.btn-to-cal{padding:5px 12px;border-radius:7px;border:1px solid var(--gold);background:var(--gold-light);font-family:'DM Sans',sans-serif;font-size:11px;color:var(--gold);cursor:pointer;transition:all .15s}
+.btn-to-cal:hover{background:var(--gold);color:var(--white)}
+
+/* CALENDAR */
+.cal-header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.cal-month-title{font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--dark)}
+.cal-nav{display:flex;gap:8px}
+.cal-nav-btn{padding:7px 14px;border-radius:9px;border:1px solid var(--border);background:var(--white);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;transition:all .15s}
+.cal-nav-btn:hover{border-color:var(--purple);color:var(--purple)}
+.cal-grid-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.cal-day-name{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:center;padding:6px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-cell{min-height:85px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:8px;cursor:pointer;transition:all .15s;position:relative}
+.cal-cell:hover{border-color:rgba(65,33,94,.3);box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.cal-cell.other-month{background:transparent;border-color:transparent;cursor:default}
+.cal-cell.other-month:hover{box-shadow:none;border-color:transparent}
+.cal-cell.today{border-color:var(--purple);background:var(--purple-pale)}
+.cal-cell.has-post{border-color:var(--gold)}
+.cal-date-num{font-size:12px;font-weight:500;color:var(--muted);margin-bottom:4px}
+.cal-cell.today .cal-date-num{color:var(--purple)}
+.cal-post-chip{font-size:10px;line-height:1.4;color:var(--dark);background:var(--gold-light);border-radius:5px;padding:2px 5px;margin-bottom:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cal-post-chip.type-predaj{background:#FFE8E8;color:#8B2020}
+.cal-post-chip.type-dovera{background:#E8F4FF;color:#1A5276}
+.cal-post-chip.type-edukacia{background:#E8FFE8;color:#1A5C1A}
+.cal-post-chip.type-story{background:var(--purple-pale);color:var(--purple)}
+
+/* ANALYZE */
+.analyze-result{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:24px;margin-top:20px;display:none;animation:fadeUp .4s ease forwards}
+.analyze-score{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.score-circle{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;flex-shrink:0}
+.score-circle.low{background:#FFF0F0;color:var(--danger)}
+.score-circle.mid{background:#FFF9E6;color:#B7791F}
+.score-circle.high{background:#F0FFF4;color:var(--success)}
+.score-info h3{font-family:'Cormorant Garamond',serif;font-size:18px;margin-bottom:4px}
+.score-info p{font-size:13px;color:var(--muted);line-height:1.5}
+.feedback-section{margin-bottom:18px}
+.feedback-title{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+.feedback-item{display:flex;gap:9px;margin-bottom:7px;font-size:14px;line-height:1.6;color:var(--dark)}
+.feedback-dot{width:6px;height:6px;border-radius:50%;margin-top:8px;flex-shrink:0}
+.dot-good{background:var(--success)}
+.dot-bad{background:var(--danger)}
+.dot-tip{background:var(--gold)}
+
+/* PROFILE SCANNER */
+.scanner-box{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:20px;margin-bottom:13px}
+.scanner-box-title{font-size:13px;font-weight:500;color:var(--dark);margin-bottom:10px}
+.profile-result{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:24px;margin-top:20px;display:none;animation:fadeUp .4s ease forwards}
+.score-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:6px}
+.score-bar-fill{height:100%;border-radius:3px;background:linear-gradient(to right,var(--purple),var(--gold));transition:width 1s ease}
+.score-row{display:flex;justify-content:space-between;margin-bottom:4px}
+
+/* AGENT */
+.agent-chat-wrap{background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:16px}
+.agent-chat-header{padding:14px 18px;background:var(--cream);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.agent-info{display:flex;align-items:center;gap:10px}
+.agent-avatar{width:32px;height:32px;background:var(--purple);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
+.agent-name{font-size:13px;font-weight:500;color:var(--dark)}
+.agent-status{font-size:11px;color:var(--success)}
+.agent-messages{padding:20px;display:flex;flex-direction:column;gap:14px;min-height:300px;max-height:420px;overflow-y:auto}
+.msg-wrap{display:flex;flex-direction:column;gap:4px}
+.msg-wrap.user{align-items:flex-end}
+.msg-wrap.agent{align-items:flex-start}
+.msg-bubble{max-width:85%;border-radius:14px;padding:12px 16px;font-size:14px;line-height:1.7;white-space:pre-wrap}
+.msg-bubble.user{background:var(--purple);color:#fff;border-radius:14px 14px 4px 14px}
+.msg-bubble.agent{background:var(--cream);color:var(--dark);border-radius:14px 14px 14px 4px}
+.msg-time{font-size:10px;color:var(--muted)}
+.agent-input-row{display:flex;gap:10px;align-items:flex-end}
+.quick-pills{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.quick-pill{padding:6px 14px;border-radius:100px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:var(--white);color:var(--muted);transition:all .15s;user-select:none}
+.quick-pill:hover{border-color:var(--purple);color:var(--purple)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--white);border-radius:18px;padding:28px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;animation:fadeUp .3s ease}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--dark);margin-bottom:4px}
+.modal-date{font-size:12px;color:var(--muted);margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.btn-modal-save{flex:1;padding:13px;background:var(--purple);color:var(--white);border:none;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}
+.btn-modal-save:hover{background:#341a4d}
+.btn-modal-cancel{padding:13px 18px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:11px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer}
+.btn-modal-del{padding:13px 18px;background:transparent;color:var(--danger);border:1px solid #FECACA;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer}
+.btn-modal-gen{width:100%;padding:12px;background:var(--gold-light);color:var(--gold);border:1px solid var(--gold);border-radius:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:12px}
+.btn-modal-gen:hover{background:var(--gold);color:var(--white)}
+
+/* FAVS */
+.empty-state{text-align:center;padding:70px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:14px;opacity:.4}
+
+/* LOADING */
+.loading-screen{position:fixed;inset:0;background:var(--dark);display:flex;align-items:center;justify-content:center;z-index:100;transition:opacity .3s}
+.loading-screen.hidden{opacity:0;pointer-events:none}
+.loading-logo{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:36px;color:var(--white)}
+.loading-logo span{font-style:normal;color:var(--gold)}
+
+/* MOBILE */
+.mobile-nav{display:none}
+@media(max-width:640px){
+  .app-header{padding:12px 14px}
+  .app-nav{display:none}
+  .btn-logout{display:none}
+  .mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);padding:8px 0 18px;z-index:30;justify-content:space-around}
+  .mob-btn{display:flex;flex-direction:column;align-items:center;gap:2px;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:9px;color:var(--muted);cursor:pointer;padding:5px 8px;border-radius:8px;transition:color .15s}
+  .mob-btn.active{color:var(--purple)}
+  .mob-icon{font-size:17px}
+  .page-layout{padding:22px 14px 100px}
+  .section-title{font-size:24px}
+  .cal-cell{min-height:52px;padding:5px}
+  .cal-post-chip{display:none}
+}
+
+.toast{position:fixed;top:76px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--dark);color:var(--white);padding:11px 22px;border-radius:100px;font-size:13px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loading">
+  <div class="loading-logo">sofii<span>.sells</span></div>
+</div>
+
+<!-- AUTH -->
+<div id="screen-auth" class="screen">
+  <div class="auth-box">
+    <div class="auth-logo">sofii<span>.sells</span></div>
+    <div class="auth-tagline">IG Revenue System</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Prihlásenie</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Registrácia</button>
+    </div>
+    <div id="auth-login">
+      <label class="auth-label">Email</label>
+      <input type="email" class="auth-input" id="login-email" placeholder="tvoj@email.com" />
+      <label class="auth-label">Heslo</label>
+      <input type="password" class="auth-input" id="login-password" placeholder="••••••••" />
+      <div class="auth-error" id="login-error"></div>
+      <button class="btn-auth" id="loginBtn" onclick="login()">
+        <div class="spinner" id="loginSpinner"></div>
+        <span id="loginTxt">Vstúpiť →</span>
+      </button>
+    </div>
+    <div id="auth-register" style="display:none;">
+      <label class="auth-label">Email</label>
+      <input type="email" class="auth-input" id="reg-email" placeholder="tvoj@email.com" />
+      <label class="auth-label">Heslo (min. 6 znakov)</label>
+      <input type="password" class="auth-input" id="reg-password" placeholder="••••••••" />
+      <div class="auth-error" id="reg-error"></div>
+      <div class="auth-success" id="reg-success"></div>
+      <button class="btn-auth" id="regBtn" onclick="register()">
+        <div class="spinner" id="regSpinner"></div>
+        <span id="regTxt">Vytvoriť účet →</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING -->
+<div id="screen-onboarding" class="screen">
+  <div class="ob-wrap" style="padding:40px 24px;margin:auto;">
+    <div class="ob-progress">
+      <div class="ob-dot done" id="dot1"></div>
+      <div class="ob-dot" id="dot2"></div>
+      <div class="ob-dot" id="dot3"></div>
+    </div>
+    <div class="ob-step active" id="ob-step-1">
+      <div class="ob-eyebrow">Vítaj v systéme</div>
+      <h2 class="ob-title">Ako ťa máme <em>volať?</em></h2>
+      <p class="ob-sub">Personalizujeme systém pre teba.</p>
+      <input type="text" class="f-input" id="ob-name" placeholder="tvoje meno..." style="margin-bottom:12px;" />
+      <button class="btn-next" onclick="obNext(1)">Pokračovať →</button>
+    </div>
+    <div class="ob-step" id="ob-step-2">
+      <div class="ob-eyebrow">O tvojom biznise</div>
+      <h2 class="ob-title">Čo <em>predávaš?</em></h2>
+      <p class="ob-sub">Popíš svoje produkty — čím viac vieme, tým lepší obsah.</p>
+      <textarea class="f-input" id="ob-products" style="height:100px;resize:none;line-height:1.6;margin-bottom:12px;" placeholder="napr. digitálne produkty, kurzy, mentoring..."></textarea>
+      <button class="btn-next" onclick="obNext(2)">Pokračovať →</button>
+    </div>
+    <div class="ob-step" id="ob-step-3">
+      <div class="ob-eyebrow">Tvoje publikum</div>
+      <h2 class="ob-title">Kto sú tvoje <em>zákazníčky?</em></h2>
+      <p class="ob-sub">Vek, čo riešia, čo chcú dosiahnuť.</p>
+      <textarea class="f-input" id="ob-audience" style="height:100px;resize:none;line-height:1.6;margin-bottom:12px;" placeholder="napr. ženy 23-35, predávajú digi produkty..."></textarea>
+      <button class="btn-next" onclick="obNext(3)">Začať tvoriť ✦</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="screen-app" class="screen">
+  <header class="app-header">
+    <div class="app-logo">sofii<span>.sells</span></div>
+    <div class="app-nav">
+      <button class="nav-btn active" onclick="switchTab('generator')">✍️ Generátor</button>
+      <button class="nav-btn" onclick="switchTab('hooks')">⚡ Hooky</button>
+      <button class="nav-btn" onclick="switchTab('sequence')">📅 Sekvencia</button>
+      <button class="nav-btn" onclick="switchTab('calendar')">🗓 Kalendár</button>
+      <button class="nav-btn" onclick="switchTab('analyze')">🔍 Analýza</button>
+      <button class="nav-btn" onclick="switchTab('scanner')">📊 Profil</button>
+      <button class="nav-btn" onclick="switchTab('favorites')">✦ Uložené</button>
+      <button class="nav-btn" onclick="switchTab('agent')">🤖 Agent</button>
+    </div>
+    <div class="user-menu">
+      <div class="user-dot" id="userDot">S</div>
+      <button class="btn-logout" onclick="logout()">Odhlásiť</button>
+    </div>
+  </header>
+  <nav class="mobile-nav">
+    <button class="mob-btn active" onclick="switchTab('generator')"><span class="mob-icon">✍️</span>Gen.</button>
+    <button class="mob-btn" onclick="switchTab('hooks')"><span class="mob-icon">⚡</span>Hooky</button>
+    <button class="mob-btn" onclick="switchTab('calendar')"><span class="mob-icon">🗓</span>Plán</button>
+    <button class="mob-btn" onclick="switchTab('analyze')"><span class="mob-icon">🔍</span>Analýza</button>
+    <button class="mob-btn" onclick="switchTab('agent')"><span class="mob-icon">🤖</span>Agent</button>
+  </nav>
+
+  <!-- GENERATOR -->
+  <div id="tab-generator" class="tab-content active">
+    <div class="page-layout">
+      <div class="section-eyebrow">Obsah ktorý predáva</div>
+      <h2 class="section-title">Vytvor <em>silný</em> post</h2>
+      <p class="section-sub" id="gen-sub">Zadaj čo chceš propagovať a systém vygeneruje obsah šitý na tvojich zákazníčky.</p>
+      <div class="field-group"><label class="field-label">Produkt alebo téma</label><input type="text" class="f-input" id="gen-product" placeholder="napr. Digital Growth Club, brand audit…" /></div>
+      <div class="field-group"><label class="field-label">Cieľ postu</label><select class="f-select" id="gen-goal"><option value="predaj">Priamy predaj</option><option value="dovera">Budovanie dôvery</option><option value="awareness">Povedomie o produkte</option><option value="followeri">Získanie nových followerov</option><option value="dm">Dostať ľudí do DM</option></select></div>
+      <div class="field-group"><label class="field-label">Formát</label><div class="pills" id="format-pills"><div class="pill active" data-format="caption">Caption</div><div class="pill" data-format="hook">Hook na reel</div><div class="pill" data-format="story">Story séria</div><div class="pill" data-format="dm">DM followup</div></div></div>
+      <div class="field-group"><label class="field-label">Tón</label><div class="tone-row"><span class="tone-lbl">Jemný & dôverný</span><input type="range" id="tone-slider" min="1" max="5" value="3" /><span class="tone-lbl r">Priamy & predajný</span></div></div>
+      <div class="field-group"><label class="field-label">Doplňujúce info (voliteľné)</label><textarea class="f-textarea" id="gen-context" style="height:75px;" placeholder="cena, príbeh, výsledky klientiek…"></textarea></div>
+      <button class="btn-primary" id="genBtn" onclick="generate()"><div class="spinner" id="genSpinner"></div><span id="genBtnText">Generovať obsah</span></button>
+      <div class="error-msg" id="genError"></div>
+      <div id="gen-results" style="display:none;"><div class="divider"><div class="div-line"></div><div class="div-text">tvoje varianty</div><div class="div-line"></div></div><div id="gen-cards"></div></div>
+    </div>
+  </div>
+
+  <!-- HOOKS -->
+  <div id="tab-hooks" class="tab-content">
+    <div class="page-layout">
+      <div class="section-eyebrow">Overené v praxi</div>
+      <h2 class="section-title">Knižnica <em>hookov</em></h2>
+      <p class="section-sub">Statická knižnica + AI generátor šitý na tvojú tému.</p>
+      <div class="hooks-gen-box">
+        <div style="font-size:13px;font-weight:500;color:var(--dark);margin-bottom:12px;">⚡ Vygeneruj hooky pre svoju tému</div>
+        <div class="hooks-gen-row">
+          <input type="text" class="f-input" id="hook-topic" placeholder="napr. predaj cez DM, digitálne produkty…" />
+          <button class="btn-gen-hooks" id="hookGenBtn" onclick="generateHooks()"><div class="spinner" id="hookSpinner" style="border-top-color:#fff"></div><span id="hookGenTxt">Generovať</span></button>
+        </div>
+        <div id="hook-gen-results" style="margin-top:14px;"></div>
+      </div>
+      <div id="hooks-container"></div>
+    </div>
+  </div>
+
+  <!-- SEQUENCE -->
+  <div id="tab-sequence" class="tab-content">
+    <div class="page-layout">
+      <div class="section-eyebrow">Celý týždeň naraz</div>
+      <h2 class="section-title">Týždenná predajná <em>sekvencia</em></h2>
+      <p class="section-sub">Zadaj produkt — dostaneš celý týždeň obsahu. Každý deň má svoju rolu.</p>
+      <div class="field-group"><label class="field-label">Produkt</label><input type="text" class="f-input" id="seq-product" placeholder="napr. Digital Growth Club za 7€/mesiac…" /></div>
+      <div class="field-group"><label class="field-label">Niečo špeciálne tento týždeň? (voliteľné)</label><input type="text" class="f-input" id="seq-special" placeholder="napr. spúšťam to prvýkrát, mám zľavu…" /></div>
+      <button class="btn-primary" id="seqBtn" onclick="generateSequence()"><div class="spinner" id="seqSpinner"></div><span id="seqBtnText">Vygenerovať týždenný plán</span></button>
+      <div class="error-msg" id="seqError"></div>
+      <div id="seq-results" style="margin-top:20px;"></div>
+    </div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="tab-calendar" class="tab-content">
+    <div class="page-layout" style="max-width:900px;">
+      <div class="cal-header-row">
+        <div><div class="section-eyebrow">Content plán</div><div class="cal-month-title" id="cal-month-title">Máj 2026</div></div>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="calPrev()">← Predch.</button>
+          <button class="cal-nav-btn" onclick="calToday()">Dnes</button>
+          <button class="cal-nav-btn" onclick="calNext()">Ďalší →</button>
+        </div>
+      </div>
+      <div class="info-box">💡 Klikni na deň a pridaj post. Môžeš aj vygenerovať text pomocou AI priamo v modali.</div>
+      <div class="cal-grid-header"><div class="cal-day-name">Po</div><div class="cal-day-name">Ut</div><div class="cal-day-name">St</div><div class="cal-day-name">Št</div><div class="cal-day-name">Pi</div><div class="cal-day-name">So</div><div class="cal-day-name">Ne</div></div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+  </div>
+
+  <!-- ANALYZE -->
+  <div id="tab-analyze" class="tab-content">
+    <div class="page-layout">
+      <div class="section-eyebrow">Spätná väzba</div>
+      <h2 class="section-title">Analyzuj svoj <em>post</em></h2>
+      <p class="section-sub">Vlož caption — systém ti povie prečo funguje alebo nefunguje.</p>
+      <div class="field-group"><label class="field-label">Tvoj text</label><textarea class="f-textarea" id="analyze-input" style="height:150px;" placeholder="Vlož sem caption, hook alebo story text…"></textarea></div>
+      <div class="field-group"><label class="field-label">Cieľ</label><select class="f-select" id="analyze-goal"><option value="predaj">Priamy predaj</option><option value="dovera">Budovanie dôvery</option><option value="dm">Dostať do DM</option><option value="followeri">Nových followerov</option></select></div>
+      <button class="btn-primary" id="analyzeBtn" onclick="analyzePost()"><div class="spinner" id="analyzeSpinner"></div><span id="analyzeBtnText">Analyzovať post</span></button>
+      <div class="error-msg" id="analyzeError"></div>
+      <div class="analyze-result" id="analyze-result"></div>
+    </div>
+  </div>
+
+  <!-- SCANNER -->
+  <div id="tab-scanner" class="tab-content">
+    <div class="page-layout">
+      <div class="section-eyebrow">Komplexná analýza</div>
+      <h2 class="section-title">Scan celého <em>profilu</em></h2>
+      <p class="section-sub">Bio + posledné captions = kompletný obraz prečo predávaš alebo nepredávaš.</p>
+      <div class="scanner-box"><div class="scanner-box-title">Bio profilu</div><textarea class="f-textarea" id="scan-bio" style="height:75px;" placeholder="Skopíruj sem celé bio z Instagramu…"></textarea></div>
+      <div class="scanner-box"><div class="scanner-box-title">Posledné posty</div><textarea class="f-textarea" id="scan-captions" style="height:180px;" placeholder="Vlož 3-5 posledných captionov — každý oddeľ prázdnym riadkom…"></textarea></div>
+      <div class="field-group"><label class="field-label">Čo predávaš?</label><input type="text" class="f-input" id="scan-product" placeholder="napr. digitálne produkty, mentoring…" /></div>
+      <button class="btn-primary" id="scanBtn" onclick="scanProfile()"><div class="spinner" id="scanSpinner"></div><span id="scanBtnText">Spustiť analýzu profilu</span></button>
+      <div class="error-msg" id="scanError"></div>
+      <div class="profile-result" id="profile-result"></div>
+    </div>
+  </div>
+
+  <!-- FAVORITES -->
+  <div id="tab-favorites" class="tab-content">
+    <div class="page-layout">
+      <div class="section-eyebrow">Uložené</div>
+      <h2 class="section-title">Obľúbené <em>texty</em></h2>
+      <p class="section-sub">Texty označené hviezdičkou — vždy po ruke.</p>
+      <div id="favs-list"></div>
+    </div>
+  </div>
+
+  <!-- AGENT -->
+  <div id="tab-agent" class="tab-content">
+    <div class="page-layout" style="max-width:720px;">
+      <div class="section-eyebrow">Tvoj osobný poradca</div>
+      <h2 class="section-title">Môj <em>AI agent</em></h2>
+      <p class="section-sub" id="agent-sub">Som tu kedykoľvek potrebuješ. Opýtaj sa na čokoľvek.</p>
+      <div class="agent-chat-wrap">
+        <div class="agent-chat-header">
+          <div class="agent-info">
+            <div class="agent-avatar">🤖</div>
+            <div><div class="agent-name">IG Revenue Agent</div><div class="agent-status">● online</div></div>
+          </div>
+          <button onclick="clearAgentChat()" style="font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:7px;padding:4px 10px;background:transparent;cursor:pointer;">vymazať chat</button>
+        </div>
+        <div id="agent-messages" class="agent-messages"></div>
+      </div>
+      <div class="agent-input-row">
+        <textarea class="f-textarea" id="agent-input" style="height:70px;flex:1;margin:0;" placeholder="Napíš čokoľvek — DM situácia, caption na kontrolu, prečo nemám predaje..."></textarea>
+        <button class="btn-primary" id="agentSendBtn" onclick="sendAgentMessage()" style="width:auto;padding:15px 20px;flex-shrink:0;"><div class="spinner" id="agentSpinner"></div><span id="agentSendTxt">Odoslať</span></button>
+      </div>
+      <div class="quick-pills" style="margin-top:12px;">
+        <div class="quick-pill" onclick="quickAsk('Prečo mi neprichádzajú predaje?')">Prečo nemám predaje?</div>
+        <div class="quick-pill" onclick="quickAsk('Ako mám odpovedať keď sa pýtajú na cenu a potom prestanú písať?')">DM po cene mlčí</div>
+        <div class="quick-pill" onclick="quickAsk('Čo mám postnúť dnes?')">Čo postnúť dnes?</div>
+        <div class="quick-pill" onclick="quickAsk('Ako zvýšiť engagement na reels?')">Viac engagementu</div>
+        <div class="quick-pill" onclick="quickAsk('Skontroluj môj caption:')">Skontrolovať caption</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDAR MODAL -->
+<div class="modal-overlay" id="cal-modal">
+  <div class="modal">
+    <div class="modal-title">Pridať post</div>
+    <div class="modal-date" id="modal-date-label"></div>
+    <div class="field-group"><label class="field-label">Typ postu</label><select class="f-select" id="modal-type"><option value="predaj">Predaj</option><option value="dovera">Dôvera</option><option value="edukacia">Edukácia</option><option value="story">Story</option></select></div>
+    <button class="btn-modal-gen" onclick="generateForCalendar()"><div class="spinner" id="calGenSpinner"></div><span id="calGenTxt">✨ Vygenerovať text pomocou AI</span></button>
+    <div class="field-group"><label class="field-label">Text / poznámka</label><textarea class="f-textarea" id="modal-text" style="height:120px;" placeholder="Napíš text alebo poznámku k tomuto postu…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-modal-save" onclick="saveCalendarPost()">Uložiť post</button>
+      <button class="btn-modal-cancel" onclick="closeModal()">Zrušiť</button>
+      <button class="btn-modal-del" id="modal-del-btn" onclick="deleteCalendarPost()" style="display:none;">Zmazať</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── SUPABASE ──
+const SUPABASE_URL = 'https://igupxcpsuqkesratsvvj.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXB4Y3BzdXFrZXNyYXRzdnZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzI1NjgsImV4cCI6MjA5NTgwODU2OH0.TBV3su1sXcrkKx6gwGA4t5epTBCIfnQZjzWQy-BQGzo';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let currentUser = null;
+let userProfile = {};
+let agentMessages = [];
+let calPosts = {};
+let favorites = [];
+let selectedFmt = 'caption';
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let modalDate = null;
+let modalPostId = null;
+
+// ── INIT ──
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    await loadProfile();
+  }
+  hideLoading();
+}
+
+function hideLoading() {
+  setTimeout(() => {
+    document.getElementById('loading').classList.add('hidden');
+    if (currentUser) {
+      if (!userProfile.name) showScreen('onboarding');
+      else { showScreen('app'); initApp(); }
+    } else {
+      showScreen('auth');
+    }
+  }, 800);
+}
+
+init();
+
+// ── AUTH ──
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('auth-login').style.display = tab==='login'?'block':'none';
+  document.getElementById('auth-register').style.display = tab==='register'?'block':'none';
+}
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const err = document.getElementById('login-error');
+  if (!email || !password) { err.textContent='Vyplň všetky polia.'; err.style.display='block'; return; }
+  err.style.display='none';
+  setAuthLoad('loginBtn','loginSpinner','loginTxt',true,'Prihlasovanie…');
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
+  if (error) { err.textContent=error.message; err.style.display='block'; }
+  else { currentUser=data.user; await loadProfile(); if(!userProfile.name){showScreen('onboarding');}else{showScreen('app');initApp();} }
+  setAuthLoad('loginBtn','loginSpinner','loginTxt',false,'Vstúpiť →');
+}
+
+async function register() {
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const err = document.getElementById('reg-error');
+  const suc = document.getElementById('reg-success');
+  if (!email || !password) { err.textContent='Vyplň všetky polia.'; err.style.display='block'; return; }
+  err.style.display='none'; suc.style.display='none';
+  setAuthLoad('regBtn','regSpinner','regTxt',true,'Registrujem…');
+  const { error } = await db.auth.signUp({ email, password });
+  if (error) { err.textContent=error.message; err.style.display='block'; }
+  else { suc.textContent='Účet vytvorený! Prihlás sa.'; suc.style.display='block'; switchAuthTab('login'); }
+  setAuthLoad('regBtn','regSpinner','regTxt',false,'Vytvoriť účet →');
+}
+
+async function logout() {
+  await db.auth.signOut();
+  currentUser=null; userProfile={}; agentMessages=[];
+  showScreen('auth');
+}
+
+function setAuthLoad(btnId,spId,txtId,loading,label) {
+  document.getElementById(btnId).disabled=loading;
+  document.getElementById(spId).style.display=loading?'block':'none';
+  document.getElementById(txtId).textContent=label;
+}
+
+document.getElementById('login-password').addEventListener('keydown',e=>{ if(e.key==='Enter')login(); });
+
+// ── PROFILE ──
+async function loadProfile() {
+  if (!currentUser) return;
+  const { data } = await db.from('profiles').select('*').eq('id', currentUser.id).single();
+  if (data) userProfile = data;
+}
+
+async function saveProfile(updates) {
+  if (!currentUser) return;
+  await db.from('profiles').upsert({ id: currentUser.id, ...updates });
+  userProfile = { ...userProfile, ...updates };
+}
+
+// ── ONBOARDING ──
+async function obNext(step) {
+  if (step===1) {
+    const n=document.getElementById('ob-name').value.trim();
+    if (!n) return;
+    await saveProfile({ name: n });
+    document.getElementById('dot2').classList.add('done');
+    goOb(2);
+  } else if (step===2) {
+    const p=document.getElementById('ob-products').value.trim();
+    if (!p) return;
+    await saveProfile({ products: p });
+    document.getElementById('dot3').classList.add('done');
+    goOb(3);
+  } else {
+    const a=document.getElementById('ob-audience').value.trim();
+    if (!a) return;
+    await saveProfile({ audience: a });
+    showScreen('app');
+    initApp();
+    showToast(`Vitaj, ${userProfile.name}! 🎉`);
+  }
+}
+
+function goOb(n) {
+  document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+  document.getElementById(`ob-step-${n}`).classList.add('active');
+}
+
+// ── SCREENS ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(`screen-${id}`).classList.add('active');
+}
+
+async function initApp() {
+  if (userProfile.name) {
+    document.getElementById('userDot').textContent=userProfile.name.charAt(0).toUpperCase();
+    document.getElementById('gen-sub').textContent=`Ahoj ${userProfile.name}! Zadaj čo chceš propagovať a systém vygeneruje obsah šitý na tvojich zákazníčky.`;
+    document.getElementById('agent-sub').textContent=`Ahoj ${userProfile.name}! Som tu kedykoľvek potrebuješ.`;
+  }
+  renderHooks();
+  await loadCalendarPosts();
+  renderCalendar();
+  await loadFavorites();
+  renderFavorites();
+  await loadAgentMessages();
+  if (agentMessages.length===0) sendWelcomeMessage();
+  else renderAgentMessages();
+}
+
+// ── TABS ──
+const tabs=['generator','hooks','sequence','calendar','analyze','scanner','favorites','agent'];
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.mob-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  const i=tabs.indexOf(tab);
+  document.querySelectorAll('.nav-btn')[i]?.classList.add('active');
+  document.querySelectorAll('.mob-btn')[i]?.classList.add('active');
+}
+
+// ── FORMAT PILLS ──
+document.querySelectorAll('#format-pills .pill').forEach(p=>{
+  p.addEventListener('click',()=>{ document.querySelectorAll('#format-pills .pill').forEach(x=>x.classList.remove('active')); p.classList.add('active'); selectedFmt=p.dataset.format; });
+});
+
+// ── GENERATOR ──
+const goalL={predaj:'priamy predaj produktu',dovera:'budovanie dôvery a autority',awareness:'povedomie o produkte',followeri:'získanie nových followerov',dm:'dostať ľudí do DM'};
+const fmtL={caption:'caption na Instagram post',hook:'hook na reel',story:'story séria (4-5 stories)',dm:'DM followup správa'};
+const toneD={1:'veľmi jemný dôverný',2:'jemný priateľský s autoritou',3:'vyvážený priateľský s výzvou',4:'priamy presvedčivý',5:'silný predajný urgentný'};
+
+async function generate() {
+  const product=document.getElementById('gen-product').value.trim();
+  const goal=document.getElementById('gen-goal').value;
+  const ctx=document.getElementById('gen-context').value.trim();
+  const tone=document.getElementById('tone-slider').value;
+  if (!product){document.getElementById('gen-product').focus();showErr('genError','Zadaj prosím produkt.');return;}
+  hideErr('genError');setLoad('genBtn','genSpinner','genBtnText',true,'Generujem…');
+  const uCtx=userProfile.name?`\nMajiteľka: ${userProfile.name}, produkty: ${userProfile.products||''}, cieľovka: ${userProfile.audience||''}`:'' ;
+  const prompt=`Si copywriterka pre @sofii.sells.${uCtx}\nSofiin štýl: hovorová slovenčina, anglicizmy ok, energická, priama, kamarátska s autoritou.\nPRODUKT: ${product} | CIEĽ: ${goalL[goal]} | FORMÁT: ${fmtL[selectedFmt]} | TÓN: ${toneD[tone]}\n${ctx?`KONTEXT: ${ctx}`:''}\nVytvor PRESNE 3 rôzne varianty. Iný hook, iný uhol, iná energia. Oddeľ "---". Žiadne čísla ani hlavičky.\n${selectedFmt==='caption'?'Caption: silný prvý riadok, osobný tón, CTA na konci, 80-150 slov.':''}\n${selectedFmt==='hook'?'Hook: max 2-3 vety, zastaví scroll do 2s.':''}\n${selectedFmt==='story'?'Story: 4-5 stories, každá 1 myšlienka, posledná CTA.':''}\n${selectedFmt==='dm'?'DM: 3-4 vety, nie pushy, kamarátska, otvorená otázka.':''}`;
+  try {
+    const r=await callAPI(prompt,1200);
+    const variants=r.split('---').map(x=>x.trim()).filter(x=>x.length>20).slice(0,3);
+    // Save to DB
+    if (currentUser) {
+      await db.from('generated_content').insert({ user_id:currentUser.id, product, format:selectedFmt, goal, variants });
+    }
+    renderResultCards(variants);
+  } catch(e){showErr('genError','Niečo sa pokazilo.');}
+  finally{setLoad('genBtn','genSpinner','genBtnText',false,'Generovať obsah');}
+}
+
+function renderResultCards(variants) {
+  const c=document.getElementById('gen-cards');c.innerHTML='';
+  const nums=['jedna','dva','tri'];
+  variants.forEach((text,i)=>{
+    const d=document.createElement('div');d.className='result-card';
+    d.innerHTML=`<div class="card-top"><span class="card-num">varianta ${nums[i]||i+1}</span><div class="card-actions"><button class="btn-icon" onclick="saveFav(\`${esc(text)}\`)">✦ uložiť</button><button class="btn-icon" onclick="copyText(this,\`${esc(text)}\`)">kopírovať</button></div></div><div class="card-text">${text}</div>`;
+    c.appendChild(d);
+  });
+  document.getElementById('gen-results').style.display='block';
+  setTimeout(()=>document.getElementById('gen-results').scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+// ── HOOKS ──
+const HOOKS=[
+  {cat:'Zastaví scrollovanie',sub:'Prvé 1-2 sekundy rozhodujú všetko.',items:[
+    {text:'Dám ti niečo čo mi trvalo 2 roky pochopiť — a ty to môžeš vedieť dnes.',badge:'hodnota'},
+    {text:'Všetci hovoria čo máš robiť. Nikto ti nepovie prečo ti to nefunguje.',badge:'kontrast'},
+    {text:'Toto je chyba ktorú robí 90% žien čo predávajú online — a ja som ju robila tiež.',badge:'chyba'},
+    {text:'Povedali mi že to nejde. Dnes predávam každý týždeň.',badge:'príbeh'},
+  ]},
+  {cat:'Budovanie dôvery',sub:'Ľudia kupujú od ľudí ktorým veria.',items:[
+    {text:'Nemám perfektný príbeh. Mám reálny. A práve preto ti môžem pomôcť.',badge:'autenticita'},
+    {text:'Rok späť som nemala ani jedného klienta. Tu je čo sa zmenilo.',badge:'transformácia'},
+    {text:'Keď mi zablokovali účet s 7500 followermi, mohla som skončiť. Rozhodla som sa znova začať.',badge:'resilience'},
+  ]},
+  {cat:'Predajné hooky',sub:'Priamo k veci.',items:[
+    {text:'Máš produkt. Máš obsah. Ale predaje neprichádzajú — viem presne prečo.',badge:'pain point'},
+    {text:'Toto je rozdiel medzi profilom ktorý zbiera lajky a profilom ktorý predáva.',badge:'kontrast'},
+    {text:'Nechcem ti predávať ďalší kurz. Chcem ti ukázať systém ktorý mi funguje každý týždeň.',badge:'predaj'},
+  ]},
+  {cat:'CTA hooky',sub:'Keď chceš ľudí dostať do DM.',items:[
+    {text:'Ak chceš vedieť ako to robím — napíš mi DM a pošlem ti to priamo.',badge:'DM'},
+    {text:'Mám pre teba niečo čo som ešte nezdieľala verejne. Napíš "chcem" do DM.',badge:'exkluzivita'},
+  ]}
+];
+
+function renderHooks() {
+  const c=document.getElementById('hooks-container');
+  c.innerHTML=HOOKS.map(cat=>`<div class="hook-category"><div class="hook-cat-title">${cat.cat}</div><div class="hook-cat-sub">${cat.sub}</div>${cat.items.map(h=>`<div class="hook-card"><div class="hook-text">${h.text}</div><div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;"><span class="hook-badge">${h.badge}</span><button class="hook-copy" onclick="copyHook(this,\`${esc(h.text)}\`)">kopírovať</button></div></div>`).join('')}</div>`).join('');
+}
+
+async function generateHooks() {
+  const topic=document.getElementById('hook-topic').value.trim();
+  if (!topic){document.getElementById('hook-topic').focus();return;}
+  document.getElementById('hookGenBtn').disabled=true;
+  document.getElementById('hookSpinner').style.display='block';
+  document.getElementById('hookGenTxt').textContent='Generujem…';
+  const uCtx=userProfile.name?`Majiteľka: ${userProfile.name}, produkty: ${userProfile.products||''}, cieľovka: ${userProfile.audience||''}`:'' ;
+  const prompt=`Si copywriterka pre @sofii.sells. ${uCtx}\nVytvor 8 rôznych Instagram hookov na tému: "${topic}"\nKaždý iný — iný uhol, iná emócia. Hovorová slovenčina, energické.\nVÝHRADNE JSON: {"hooks":["hook1","hook2","hook3","hook4","hook5","hook6","hook7","hook8"]}`;
+  try {
+    const raw=await callAPI(prompt,600);
+    const data=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const c=document.getElementById('hook-gen-results');
+    c.innerHTML=`<div style="margin-bottom:8px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Pre: ${topic}</div>`+data.hooks.map(h=>`<div class="hook-card" style="margin-bottom:8px;"><div class="hook-text">${h}</div><button class="hook-copy" onclick="copyHook(this,\`${esc(h)}\`)">kopírovať</button></div>`).join('');
+  }catch(e){document.getElementById('hook-gen-results').innerHTML='<div style="color:var(--danger);font-size:13px;">Chyba. Skús znova.</div>';}
+  finally{document.getElementById('hookGenBtn').disabled=false;document.getElementById('hookSpinner').style.display='none';document.getElementById('hookGenTxt').textContent='Generovať';}
+}
+
+function copyHook(btn,text){navigator.clipboard.writeText(text).then(()=>{const o=btn.textContent;btn.textContent='✓ ok';btn.classList.add('copied');setTimeout(()=>{btn.textContent=o;btn.classList.remove('copied');},2000);});}
+
+// ── SEQUENCE ──
+async function generateSequence() {
+  const product=document.getElementById('seq-product').value.trim();
+  const special=document.getElementById('seq-special').value.trim();
+  if (!product){document.getElementById('seq-product').focus();showErr('seqError','Zadaj prosím produkt.');return;}
+  hideErr('seqError');setLoad('seqBtn','seqSpinner','seqBtnText',true,'Generujem…');
+  const uCtx=userProfile.name?`Majiteľka: ${userProfile.name}, produkty: ${userProfile.products||''}, cieľovka: ${userProfile.audience||''}`:'' ;
+  const prompt=`Si copywriterka pre @sofii.sells. ${uCtx} Sofiin štýl: hovorová slovenčina, energická.\nVytvor týždenný predajný content plán pre: ${product}\n${special?`Špeciálna situácia: ${special}`:''}\nPo=dôvera, Ut=edukácia, St=dôkaz, Št=námietky, Pi=predaj. Každý 60-120 slov.\nVÝHRADNE JSON: {"days":[{"day":"Pondelok","type":"Dôvera","content":"..."},{"day":"Utorok","type":"Edukácia","content":"..."},{"day":"Streda","type":"Dôkaz","content":"..."},{"day":"Štvrtok","type":"Námietky","content":"..."},{"day":"Piatok","type":"Predaj","content":"..."}]}`;
+  try {
+    const raw=await callAPI(prompt,2000);
+    const data=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    renderSequence(data.days);
+  }catch(e){showErr('seqError','Niečo sa pokazilo.');}
+  finally{setLoad('seqBtn','seqSpinner','seqBtnText',false,'Vygenerovať týždenný plán');}
+}
+
+function renderSequence(days) {
+  const c=document.getElementById('seq-results');
+  c.innerHTML=days.map(d=>`<div class="seq-day"><div class="seq-day-header"><span class="seq-day-label">${d.day}</span><span class="seq-day-type">${d.type}</span></div><div class="seq-day-body"><div class="seq-day-content">${d.content}</div><div class="seq-actions"><button class="seq-copy" onclick="copyText(this,\`${esc(d.content)}\`)">kopírovať</button><button class="btn-to-cal" onclick="addToCalFromSeq(\`${esc(d.content)}\`,\`${d.type.toLowerCase()}\`)">+ do kalendára</button></div></div></div>`).join('');
+  setTimeout(()=>c.scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+function addToCalFromSeq(text, type) {
+  switchTab('calendar');
+  showToast('Otvor deň v kalendári a vlož text 👆');
+}
+
+// ── CALENDAR ──
+const monthNames=['Január','Február','Marec','Apríl','Máj','Jún','Júl','August','September','Október','November','December'];
+const typeColors={predaj:'type-predaj',dovera:'type-dovera',edukacia:'type-edukacia',story:'type-story'};
+
+async function loadCalendarPosts() {
+  if (!currentUser) return;
+  const { data } = await db.from('calendar_posts').select('*').eq('user_id', currentUser.id);
+  calPosts = {};
+  if (data) data.forEach(p => { if (!calPosts[p.date]) calPosts[p.date]=[]; calPosts[p.date].push(p); });
+}
+
+function renderCalendar() {
+  const title=document.getElementById('cal-month-title');
+  title.textContent=`${monthNames[calMonth]} ${calYear}`;
+  const grid=document.getElementById('cal-grid');
+  grid.innerHTML='';
+  const firstDay=new Date(calYear,calMonth,1);
+  const lastDay=new Date(calYear,calMonth+1,0);
+  const today=new Date();
+  let startDow=firstDay.getDay();
+  if(startDow===0)startDow=7;
+  startDow--;
+  const prevDays=new Date(calYear,calMonth,0).getDate();
+  for(let i=startDow-1;i>=0;i--){const cell=document.createElement('div');cell.className='cal-cell other-month';cell.innerHTML=`<div class="cal-date-num" style="opacity:.3">${prevDays-i}</div>`;grid.appendChild(cell);}
+  for(let d=1;d<=lastDay.getDate();d++){
+    const cell=document.createElement('div');
+    const isToday=d===today.getDate()&&calMonth===today.getMonth()&&calYear===today.getFullYear();
+    const dateKey=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const posts=calPosts[dateKey]||[];
+    cell.className='cal-cell'+(isToday?' today':'')+(posts.length?' has-post':'');
+    cell.onclick=()=>openModal(dateKey,d);
+    cell.innerHTML=`<div class="cal-date-num">${d}</div>${posts.map(p=>`<div class="cal-post-chip ${typeColors[p.type]||''}">${p.text.substring(0,35)}${p.text.length>35?'…':''}</div>`).join('')}<div class="cal-add-btn" style="font-size:10px;color:var(--muted);opacity:0;">+ post</div>`;
+    grid.appendChild(cell);
+  }
+  const totalCells=startDow+lastDay.getDate();
+  const remaining=(7-totalCells%7)%7;
+  for(let i=1;i<=remaining;i++){const cell=document.createElement('div');cell.className='cal-cell other-month';cell.innerHTML=`<div class="cal-date-num" style="opacity:.3">${i}</div>`;grid.appendChild(cell);}
+}
+
+function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+function calToday(){calYear=new Date().getFullYear();calMonth=new Date().getMonth();renderCalendar();}
+
+function openModal(dateKey, day) {
+  modalDate=dateKey;
+  const existing=calPosts[dateKey]?.[0];
+  modalPostId=existing?.id||null;
+  const parts=dateKey.split('-');
+  document.getElementById('modal-date-label').textContent=`${day}. ${monthNames[parseInt(parts[1])-1]} ${parts[0]}`;
+  document.getElementById('modal-type').value=existing?.type||'predaj';
+  document.getElementById('modal-text').value=existing?.text||'';
+  document.getElementById('modal-del-btn').style.display=existing?'block':'none';
+  document.getElementById('cal-modal').classList.add('open');
+}
+
+function closeModal(){document.getElementById('cal-modal').classList.remove('open');modalDate=null;modalPostId=null;}
+
+async function saveCalendarPost() {
+  if (!modalDate||!currentUser) return;
+  const type=document.getElementById('modal-type').value;
+  const text=document.getElementById('modal-text').value.trim();
+  if (!text){document.getElementById('modal-text').focus();return;}
+  if (modalPostId) {
+    await db.from('calendar_posts').update({type,text}).eq('id',modalPostId);
+  } else {
+    await db.from('calendar_posts').insert({user_id:currentUser.id,date:modalDate,type,text});
+  }
+  await loadCalendarPosts();
+  closeModal();renderCalendar();showToast('Post uložený ✓');
+}
+
+async function deleteCalendarPost() {
+  if (!modalPostId||!currentUser) return;
+  await db.from('calendar_posts').delete().eq('id',modalPostId);
+  await loadCalendarPosts();
+  closeModal();renderCalendar();showToast('Post zmazaný');
+}
+
+async function generateForCalendar() {
+  const type=document.getElementById('modal-type').value;
+  document.getElementById('calGenSpinner').style.display='block';
+  document.getElementById('calGenTxt').textContent='Generujem…';
+  const typeGoal={predaj:'priamy predaj',dovera:'budovanie dôvery',edukacia:'edukácia hodnota zadarmo',story:'story sekvenciu'};
+  const uCtx=userProfile.name?`Majiteľka: ${userProfile.name}, produkty: ${userProfile.products||''}, cieľovka: ${userProfile.audience||''}`:'' ;
+  const prompt=`Si copywriterka pre @sofii.sells. ${uCtx} Sofiin štýl: hovorová slovenčina, energická.\nVytvor jeden Instagram caption (80-120 slov) so zameraním na: ${typeGoal[type]}.\nBez uvodzoviek. Len čistý text.`;
+  try{const r=await callAPI(prompt,400);document.getElementById('modal-text').value=r.trim();}
+  catch(e){showToast('Chyba generovania');}
+  finally{document.getElementById('calGenSpinner').style.display='none';document.getElementById('calGenTxt').textContent='✨ Vygenerovať text pomocou AI';}
+}
+
+document.getElementById('cal-modal').addEventListener('click',e=>{if(e.target===document.getElementById('cal-modal'))closeModal();});
+
+// ── ANALYZE ──
+async function analyzePost() {
+  const caption=document.getElementById('analyze-input').value.trim();
+  const goal=document.getElementById('analyze-goal').value;
+  if (!caption){document.getElementById('analyze-input').focus();showErr('analyzeError','Vlož prosím text.');return;}
+  hideErr('analyzeError');setLoad('analyzeBtn','analyzeSpinner','analyzeBtnText',true,'Analyzujem…');
+  const prompt=`Analyzuj Instagram caption z pohľadu predajnej efektívnosti. CIEĽ: ${goalL[goal]}\nTEXT: "${caption}"\nVÝHRADNE JSON: {"score":[1-100],"headline":"[5-7 slov po slovensky]","summary":"[1-2 vety]","positives":["bod1","bod2","bod3"],"issues":["bod1","bod2","bod3"],"tips":["bod1","bod2","bod3"]}`;
+  try{const raw=await callAPI(prompt,700);const data=JSON.parse(raw.replace(/```json|```/g,'').trim());renderAnalysis(data);}
+  catch(e){showErr('analyzeError','Niečo sa pokazilo.');}
+  finally{setLoad('analyzeBtn','analyzeSpinner','analyzeBtnText',false,'Analyzovať post');}
+}
+
+function renderAnalysis(r) {
+  const sc=r.score>=70?'high':r.score>=40?'mid':'low';
+  const el=document.getElementById('analyze-result');
+  el.innerHTML=`<div class="analyze-score"><div class="score-circle ${sc}">${r.score}</div><div class="score-info"><h3>${r.headline}</h3><p>${r.summary}</p></div></div>${r.positives?.length?`<div class="feedback-section"><div class="feedback-title">Čo funguje</div>${r.positives.map(p=>`<div class="feedback-item"><div class="feedback-dot dot-good"></div><span>${p}</span></div>`).join('')}</div>`:''} ${r.issues?.length?`<div class="feedback-section"><div class="feedback-title">Čo nefunguje</div>${r.issues.map(p=>`<div class="feedback-item"><div class="feedback-dot dot-bad"></div><span>${p}</span></div>`).join('')}</div>`:''} ${r.tips?.length?`<div class="feedback-section"><div class="feedback-title">Ako vylepšiť</div>${r.tips.map(p=>`<div class="feedback-item"><div class="feedback-dot dot-tip"></div><span>${p}</span></div>`).join('')}</div>`:''}`;
+  el.style.display='block';setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+// ── SCANNER ──
+async function scanProfile() {
+  const bio=document.getElementById('scan-bio').value.trim();
+  const captions=document.getElementById('scan-captions').value.trim();
+  const product=document.getElementById('scan-product').value.trim();
+  if (!bio&&!captions){showErr('scanError','Vlož aspoň bio alebo captions.');return;}
+  hideErr('scanError');setLoad('scanBtn','scanSpinner','scanBtnText',true,'Skenujem…');
+  const prompt=`Analyzuj predajný potenciál Instagram profilu.\n${bio?`BIO: ${bio}`:''}\n${captions?`POSTY:\n${captions}`:''}\n${product?`PREDÁVA: ${product}`:''}\nVÝHRADNE JSON: {"overall_score":[1-100],"overall_label":"[po slovensky]","scores":{"bio":[1-100],"obsah":[1-100],"predaj":[1-100],"dovera":[1-100]},"silne_stranky":["bod1","bod2","bod3"],"slabe_stranky":["bod1","bod2","bod3"],"priority":["zmena1","zmena2","zmena3"],"bio_rewrite":"[nové bio po slovensky]"}`;
+  try{const raw=await callAPI(prompt,1000);const data=JSON.parse(raw.replace(/```json|```/g,'').trim());renderProfileResult(data);}
+  catch(e){showErr('scanError','Niečo sa pokazilo.');}
+  finally{setLoad('scanBtn','scanSpinner','scanBtnText',false,'Spustiť analýzu profilu');}
+}
+
+function renderProfileResult(r) {
+  const el=document.getElementById('profile-result');
+  const scoreItems=[{l:'Bio',k:'bio'},{l:'Obsah',k:'obsah'},{l:'Predajnosť',k:'predaj'},{l:'Dôvera',k:'dovera'}];
+  el.innerHTML=`<div style="margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border);"><div class="score-row"><span style="font-weight:500;">Celkové skóre</span><span>${r.overall_score}/100</span></div><div class="score-bar"><div class="score-bar-fill" style="width:${r.overall_score}%"></div></div><p style="font-size:13px;color:var(--muted);margin-top:6px;">${r.overall_label}</p></div><div style="display:grid;gap:12px;margin-bottom:22px;">${scoreItems.map(s=>`<div><div class="score-row"><span>${s.l}</span><span>${r.scores[s.k]}/100</span></div><div class="score-bar"><div class="score-bar-fill" style="width:${r.scores[s.k]}%"></div></div></div>`).join('')}</div>${r.silne_stranky?.length?`<div class="feedback-section"><div class="feedback-title">Silné stránky</div>${r.silne_stranky.map(p=>`<div class="feedback-item"><div class="feedback-dot dot-good"></div><span>${p}</span></div>`).join('')}</div>`:''} ${r.slabe_stranky?.length?`<div class="feedback-section"><div class="feedback-title">Slabé stránky</div>${r.slabe_stranky.map(p=>`<div class="feedback-item"><div class="feedback-dot dot-bad"></div><span>${p}</span></div>`).join('')}</div>`:''} ${r.priority?.length?`<div class="feedback-section"><div class="feedback-title">Top priority</div>${r.priority.map((p,i)=>`<div class="feedback-item"><div class="feedback-dot dot-tip"></div><span><strong>${i+1}.</strong> ${p}</span></div>`).join('')}</div>`:''} ${r.bio_rewrite?`<div style="background:var(--purple-pale);border:1px solid var(--purple-light);border-radius:12px;padding:18px;"><div class="feedback-title" style="color:var(--purple);">Navrhované nové bio</div><div style="font-size:14px;line-height:1.7;white-space:pre-wrap;color:var(--dark);margin-bottom:12px;">${r.bio_rewrite}</div><button class="btn-icon" onclick="copyText(this,\`${esc(r.bio_rewrite)}\`)">kopírovať bio</button></div>`:''}`;
+  el.style.display='block';setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+// ── FAVORITES ──
+async function loadFavorites() {
+  if (!currentUser) return;
+  const { data } = await db.from('favorites').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  favorites = data || [];
+}
+
+async function saveFav(text) {
+  if (!currentUser) return;
+  const exists = favorites.some(f=>f.text===text);
+  if (exists) { showToast('Už je uložené'); return; }
+  const { data } = await db.from('favorites').insert({user_id:currentUser.id,text}).select().single();
+  if (data) { favorites.unshift(data); renderFavorites(); showToast('Uložené ✦'); }
+}
+
+async function removeFav(id) {
+  if (!currentUser) return;
+  await db.from('favorites').delete().eq('id',id);
+  favorites=favorites.filter(f=>f.id!==id);
+  renderFavorites();showToast('Odobrané');
+}
+
+function renderFavorites() {
+  const c=document.getElementById('favs-list');
+  if (!favorites.length){c.innerHTML=`<div class="empty-state"><div class="empty-icon">✦</div><p>Žiadne uložené texty.<br>Označ si obľúbené v Generátore.</p></div>`;return;}
+  c.innerHTML=favorites.map(f=>`<div class="result-card" style="animation:none;opacity:1;"><div class="card-top"><span class="card-num">${new Date(f.created_at).toLocaleDateString('sk-SK')}</span><div class="card-actions"><button class="btn-icon" onclick="removeFav('${f.id}')">odstrániť</button><button class="btn-icon" onclick="copyText(this,\`${esc(f.text)}\`)">kopírovať</button></div></div><div class="card-text">${f.text}</div></div>`).join('');
+}
+
+// ── AGENT ──
+async function loadAgentMessages() {
+  if (!currentUser) return;
+  const { data } = await db.from('agent_messages').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:true}).limit(50);
+  agentMessages = data || [];
+}
+
+async function saveAgentMessage(role, content) {
+  if (!currentUser) return;
+  const { data } = await db.from('agent_messages').insert({user_id:currentUser.id,role,content}).select().single();
+  if (data) agentMessages.push(data);
+}
+
+function sendWelcomeMessage() {
+  const welcome = `Ahoj${userProfile.name?' '+userProfile.name:''}! 👋\n\nViem o tebe:\n— Predávaš: ${userProfile.products||'...'}\n— Tvoje zákazníčky: ${userProfile.audience||'...'}\n\nSom tu kedykoľvek. Napíš mi čokoľvek — DM situácia, caption na kontrolu, prečo neprichádzajú predaje.\n\nČo riešiš teraz?`;
+  agentMessages.push({role:'agent',content:welcome,created_at:new Date().toISOString()});
+  renderAgentMessages();
+  saveAgentMessage('agent',welcome);
+}
+
+function renderAgentMessages() {
+  const c=document.getElementById('agent-messages');
+  c.innerHTML=agentMessages.map(m=>`<div class="msg-wrap ${m.role}"><div class="msg-bubble ${m.role}">${m.content}</div><div class="msg-time">${new Date(m.created_at).toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})}</div></div>`).join('');
+  c.scrollTop=c.scrollHeight;
+}
+
+function quickAsk(q){document.getElementById('agent-input').value=q;document.getElementById('agent-input').focus();}
+
+async function clearAgentChat() {
+  if (!currentUser) return;
+  await db.from('agent_messages').delete().eq('user_id',currentUser.id);
+  agentMessages=[];
+  sendWelcomeMessage();
+}
+
+document.getElementById('agent-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAgentMessage();}});
+
+async function sendAgentMessage() {
+  const input=document.getElementById('agent-input');
+  const text=input.value.trim();
+  if (!text) return;
+  agentMessages.push({role:'user',content:text,created_at:new Date().toISOString()});
+  renderAgentMessages();
+  saveAgentMessage('user',text);
+  input.value='';
+  document.getElementById('agentSendBtn').disabled=true;
+  document.getElementById('agentSpinner').style.display='block';
+  document.getElementById('agentSendTxt').textContent='...';
+  const toneLabels={zaciatok:'začína od nuly',produkt:'má produkt bez predajov',prvy:'má prvé predaje',skalovanie:'predáva a škáluje'};
+  const systemPrompt=`Si osobný Instagram business agent pre ${userProfile.name||'zákazníčku'}.\nJej biznis: predáva ${userProfile.products||'digitálne produkty'}, cieľovka: ${userProfile.audience||'ženy'}.\nSofiin štýl: hovorová slovenčina, priama, kamarátska s autoritou, konkrétna.\nNIKDY nedávaj všeobecné rady. Vždy konkrétne na jej biznis. Max 200 slov.\n\nHistória:\n${agentMessages.slice(-6).map(m=>`${m.role==='user'?'Zákazníčka':'Agent'}: ${m.content}`).join('\n')}`;
+  try {
+    const r=await callAPI(`${systemPrompt}\n\nZákazníčka: "${text}"`,600);
+    const reply=r.trim();
+    agentMessages.push({role:'agent',content:reply,created_at:new Date().toISOString()});
+    renderAgentMessages();
+    saveAgentMessage('agent',reply);
+  }catch(e){
+    agentMessages.push({role:'agent',content:'Ups, niečo sa pokazilo. Skús znova.',created_at:new Date().toISOString()});
+    renderAgentMessages();
+  }
+  finally{document.getElementById('agentSendBtn').disabled=false;document.getElementById('agentSpinner').style.display='none';document.getElementById('agentSendTxt').textContent='Odoslať';}
+}
+
+// ── API ──
+async function callAPI(prompt,maxTokens){
+  const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({max_tokens:maxTokens,messages:[{role:"user",content:prompt}]})});
+  const d=await r.json();if(!r.ok)throw new Error(d.error?.message||'Chyba');return d.content?.[0]?.text||'';
+}
+
+// ── UTILS ──
+function copyText(btn,text){navigator.clipboard.writeText(text).then(()=>{const o=btn.textContent;btn.textContent='✓ skopírované';btn.classList.add('copied');setTimeout(()=>{btn.textContent=o;btn.classList.remove('copied');},2000);});}
+function setLoad(btnId,spId,txtId,loading,label){const b=document.getElementById(btnId);if(b)b.disabled=loading;const s=document.getElementById(spId);if(s)s.style.display=loading?'block':'none';const t=document.getElementById(txtId);if(t)t.textContent=label;}
+function showErr(id,msg){const e=document.getElementById(id);if(e){e.textContent=msg;e.style.display='block';}}
+function hideErr(id){const e=document.getElementById(id);if(e)e.style.display='none';}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function esc(s){return(s||'').replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$/g,'\\$').replace(/'/g,"\\'")}
+</script>
+</body>
+</html>
